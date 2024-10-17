@@ -392,15 +392,34 @@ class OpAreaSend(OperationAreaBox):
 
 
 class OpAreaCommand(OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-    
+    """
+    This class represents the operation area for the Command screen.
+    It contains manually defined CommandRowObj instances and manages their activation and command execution.
+    """
+
     def __init__(self, **kwargs):
         super(OpAreaCommand, self).__init__(**kwargs)
-
+        
     def on_init(self):
-        """Method called after startup or when initializing back to the default state."""
-        print(f"Started: {self.ccn}")
-        # Add more initialization logic for the "command" screen if needed
+        """=== Method name: on_init ====================================================================================
+        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
+        ========================================================================================== by Sziller ==="""
+        pass
+
+    def activate_row(self, active_row):
+        """
+        Activates the specified row and deactivates all other rows.
+        """
+        for row in self.command_rows:
+            row.set_active(row == active_row)
+
+    def execute_command(self, row_number, parameters):
+        """
+        Executes the command for the given row with the provided parameters.
+        """
+        print(f"Executing command from row {row_number} with parameters: {parameters}")
+        # Add your logic for executing the command here
+
 
 
 class SalletBEVOR(App):
@@ -415,6 +434,7 @@ class SalletBEVOR(App):
         self.window_content = window_content
         self.content_size_multiplier = csm
         self.dotenv_path: str = dotenv_path
+        dotenv.load_dotenv(self.dotenv_path)
         self.title: str = "Sallet - Bevor: Command your Node"
         self.balance_onchain_sats: int = 0
         # --- Database settings ---------------------------------------------   - Database settings -   START   -

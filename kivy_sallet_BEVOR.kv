@@ -139,7 +139,12 @@ SalletScreenManager:
 #:set rel_size_ribbon (1, 0.075)
 #:set size_list (0.4, 1)
 #:set size_list_left (0.6, 1)
+#:set size_list_comm_left (0.3, 1)
+#:set size_list_comm_center (0.5, 1)
+#:set size_list_comm_right (0.2, 1)
 #:set n_features 7
+#:set n_commands 3
+
 
 <InScreenWindow@BoxLayout>:
     orientation: "vertical"
@@ -282,7 +287,7 @@ SalletScreenManager:
             id: lbl_welcome_title
             text: "Welcome"
         LabelWelcomeIntro:
-            size_hint: 1, 0.20
+            size_hint: 1, 0.3
             id: lbl_welcome_intro
             text: "Welcome"
         BoxLayout:
@@ -341,28 +346,6 @@ SalletScreenManager:
             size_hint: 1, 0.1
             LabelPH:
                 size_hint: 1, 1
-            
-<OpAreaBtc@OperationAreaBox>:
-    orientation: "vertical"
-    LabelBalanceBtc:
-        id: lbl_balance_btc
-        size_hint: 1, 0.3
-        text: "0.0 btc"
-    LabelBalanceSat:
-        id: lbl_balance_sat
-        size_hint: 1, 0.5
-        text: "0 sats"
-    BoxLayout:
-        size_hint: 1, 0.2
-        orientation: "horizontal"
-        padding: 10, 10, 10, 10
-        spacing: 10
-        ButtonBig:
-            size_hint: 0.5, 1
-            text: "send"
-        ButtonBig:
-            size_hint: 0.5, 1
-            text: "receive"
 
 <OpAreaBrowse@OperationAreaBox>:
     orientation: "vertical"
@@ -400,11 +383,46 @@ SalletScreenManager:
     BoxLayout:
         orientation: "vertical"
         size_hint: 1, 1
-        Label:
-            text: "Manage your node commands here"
+        LabelWelcomeTitle:
             size_hint: 1, 0.1
-        ## Add more widgets here for the "command" screen as needed
- 
+            id: lbl_welcome_title
+            text: "Welcome"
+        LabelWelcomeIntro:
+            size_hint: 1, 0.20
+            id: lbl_welcome_intro
+            text: "Welcome"
+        BoxLayout:
+            orientation: "vertical"
+            size_hint: 1, 1
+            CommandRowObjPure:
+                id: command_row_getconnectioncount
+                size_hint: 1, 1/n_commands
+                text_btn_comm_activate: "getconnectioncount"
+                text_lbl_param: "no parameters needed"
+                text_btn_comm_issue: "ENTER"
+                size_btn_comm_activate: size_list_comm_left
+                size_lbl_param: size_list_comm_center
+                size_btn_comm_issue: size_list_comm_right
+            CommandRowObjPure:
+                id: command_row_blockheight
+                size_hint: 1, 1/n_commands
+                text_btn_comm_activate: "blockheight"
+                text_lbl_param: "no parameters needed"
+                text_btn_comm_issue: "ENTER"
+                size_btn_comm_activate: size_list_comm_left
+                size_lbl_param: size_list_comm_center
+                size_btn_comm_issue: size_list_comm_right
+            CommandRowObjParam:
+                id: command_row_getblockhash
+                size_hint: 1, 1/n_commands
+                text_btn_comm_activate: "getblockhash"
+                text_lbl_param: "no parameters needed"
+                text_btn_comm_issue: "ENTER"
+                size_btn_comm_activate: size_list_comm_left
+                size_lbl_param: size_list_comm_center
+                size_btn_comm_issue: size_list_comm_right
+            ## Add more widgets here for the "command" screen as needed
+  
 <NodeLine@BoxLayout>:
     node_alias: "node_alias"
     node_address: "node_address"
@@ -808,6 +826,45 @@ SalletScreenManager:
 <NodeRowObj@BoxLayout>:
     size_hint: 1, None
     height: 30
+    
+<CommandRowObjPure@BoxLayout>:
+    text_btn_comm_activate: "N/A"
+    size_btn_comm_activate: (1, 0.5)
+    text_lbl_param: "N/A"
+    size_lbl_param: (1, 0.5)
+    text_btn_comm_issue: "N/A"    
+    size_btn_comm_issue: (1, 0.5)
+    orientation: "horizontal"
+    size_hint: 1, 1/n_commands
+    ButtonInfo: ## LabelWelcomeList:
+        size_hint: root.size_btn_comm_activate
+        text: root.text_btn_comm_activate
+    LabelWelcomeListLeft:
+        size_hint: root.size_lbl_param
+        text: root.text_lbl_param
+    ButtonInfo: ## LabelWelcomeList:
+        size_hint: root.size_btn_comm_issue
+        text: root.text_btn_comm_issue
+
+<CommandRowObjParam@BoxLayout>:
+    text_btn_comm_activate: "N/A"
+    size_btn_comm_activate: (1, 0.5)
+    text_lbl_param: "N/A"
+    size_lbl_param: (1, 0.5)
+    text_btn_comm_issue: "N/A"    
+    size_btn_comm_issue: (1, 0.5)
+    orientation: "horizontal"
+    size_hint: 1, 1/n_commands
+    ButtonInfo: ## LabelWelcomeList:
+        size_hint: root.size_btn_comm_activate
+        text: root.text_btn_comm_activate
+    TextInputSallet:
+        size_hint: root.size_lbl_param
+        text: root.text_lbl_param
+    ButtonInfo: ## LabelWelcomeList:
+        size_hint: root.size_btn_comm_issue
+        text: root.text_btn_comm_issue
+
 
 <LabelRowList@BoxLayout>:
     text_btn: "N/A"

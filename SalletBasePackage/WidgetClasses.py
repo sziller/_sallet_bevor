@@ -295,3 +295,4 @@ class UtxoRowObj(BoxLayout):
         """=== Method to use actual utxo as Transaction input"""
         print("Button pushed: <remove_this_utxo>")
         self.parent_op_area.disregard_utxo_as_input(self.uxto_id_obj)
+
