@@ -5,3 +5,5 @@ python-dotenv  # pip3 install python-dotenv
 pyzbar  # pip3 install pyzbar
 opencv-python  # pip3 install opencv-python   - cv2 is part of it
 pyaml  # pip3 install pyaml
+./lib/SalletNodePackage-0.1.0-py3-none-any.whl
+./lib/SQLPackage-0.1.0-py3-none-any.whl

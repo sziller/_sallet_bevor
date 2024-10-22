@@ -6,6 +6,7 @@ import sys
 import cv2
 import dotenv
 import inspect
+from typing import Optional
 from kivy.app import App  # necessary for the App class
 from kivy.uix.screenmanager import ScreenManager
 from kivy.core.window import Window
@@ -17,8 +18,9 @@ from SalletBasePackage.WidgetClasses import *
 from SalletBasePackage import SQL_interface as sql, models
 from SalletBasePackage import units
 from SalletBasePackage import DataDisplay as DaDi
-from SalletNodePackage import NodeManager as NodeMan
-from SalletNodePackage import BitcoinNodeObject as BtcNode
+from SalletNodePackage.NodeManager import NODEManager
+from SalletNodePackage.BitcoinNodeObject import Node as btcNode
+from sql_bases.sqlbase_node.sqlbase_node import Node as sqlNode
 
 
 from kivy.config import Config
@@ -339,7 +341,6 @@ class OpAreaSend(OperationAreaBox):
     
     def __init__(self, **kwargs):
         super(OpAreaSend, self).__init__(**kwargs)
-        self.nodemanager: NodeMan.NODEManager or None   = None
         self.node_rowobj_dict_in_opareasend: dict = {}
         self.used_node: BtcNode.Node or None = None
         
@@ -347,7 +348,9 @@ class OpAreaSend(OperationAreaBox):
         """=== Method name: on_init ====================================================================================
         Default method to run right after startup (or whenever defaulting back to initial state is necessary)
         ========================================================================================== by Sziller ==="""
-        self.nodemanager = NodeMan.NODEManager(session_in=App.get_running_app().db_session, dotenv_path="./.env")
+        self.nodemanager = NODEManager(session_in=App.get_running_app().db_session,
+                                       dotenv_path="./.env",
+                                       row_obj=sqlNode.__table__)
         self.display_node_rowobj_list()
     
     def on_btn_release_broadcast(self):
@@ -379,7 +382,7 @@ class OpAreaSend(OperationAreaBox):
             self.ids.node_display_area.add_widget(newline)  # only add if key does not exist!!!
             self.node_rowobj_dict_in_opareasend[alias] = newline
         
-    def use_node(self, node: BtcNode.Node):
+    def use_node(self, node: btcNode):
         """=== Method name: use_node ===================================================================================
         ========================================================================================== by Sziller ==="""
         print(node)
@@ -388,7 +391,7 @@ class OpAreaSend(OperationAreaBox):
             if alias is not used_alias:
                 node_rowobj.disabled = False
         self.ids.used_node_data.node_alias = node.alias
-        self.ids.used_node_data.node_address = node.ip + ":" + str(node.port)
+        self.ids.used_node_data.node_address = node.rpc_ip + ":" + str(node.rpc_port)
 
 
 class OpAreaCommand(OperationAreaBox):
@@ -421,7 +424,6 @@ class OpAreaCommand(OperationAreaBox):
         # Add your logic for executing the command here
 
 
-
 class SalletBEVOR(App):
     """=== Class name: SalletBEVOR =====================================================================================
     Child of built-in class: App
@@ -448,7 +450,10 @@ class SalletBEVOR(App):
         self.display_format: str    = os.getenv("DISPLAY_FORMAT") + " " + os.getenv("UNIT_USE")
         # --- Bitcoin related settings ----------------------------------  Bitcoin related settings -   ENDED   -
         # --- Node related settings -------------------------------------  Node related settings    -   START   -
-        self.actual_node_object: BtcNode.Node or None = None
+        self.nodemanager: NODEManager = NODEManager(dotenv_path="./.env",
+                                                    row_obj=sqlNode.__table__,
+                                                    session_in=self.db_session)
+        self.actual_node_object: Optional[btcNode] = None
         # --- Node related settings -------------------------------------  Node related settings    -   START   -
 
     def change_screen(self, screen_name, screen_direction="left"):
@@ -490,9 +495,50 @@ class SalletBEVOR(App):
         self.root.ids.screen_intro.ids.oparea_intro.ids.lbl_welcome_intro.text = WELCOME_TXT
         # --- Filling in large text-fields of Labels                                            ENDED   -
         # --- Setting default Node                                                              START   -
-        self.actual_node_object = BtcNode.Node(is_rpc=True, dotenv_path=self.dotenv_path)
+        self.nodemanager.get_key_guided_rowdict()
+        self.switch_node(target_alias=os.getenv("DEFAULT_NODE"))
         # --- Setting default Node                                                              ENDED   -
+    
+    def update_node_info(self):
+        """Update both the Ribbon and the label with current node info."""
+        # Update the Ribbon text on all screens
+        alias = self.actual_node_object.alias
+        is_rpc = self.actual_node_object.is_rpc
+        
+        print(self.root.ids.screen_intro.ids.ribbon_intro.text_ribbon)
+        msg = "Node: {} - {}".format(alias, {True: "RPC", False: "API"}[is_rpc])
+        self.root.ids.screen_intro.ids.ribbon_intro.text_ribbon = msg
+        self.root.ids.screen_btc.ids.ribbon_btc.text_ribbon = msg
+        self.root.ids.screen_browse.ids.ribbon_browse.text_ribbon = msg
+        self.root.ids.screen_command.ids.ribbon_command.text_ribbon = msg
 
+    def update_node_label(self):
+        """Update the detailed node label on the Welcome screen."""
+        node = self.actual_node_object
+        label_text = f"{node.alias}\n"
+        if node.is_rpc:
+            label_text +=   f"RPC\n" \
+                            f"{node.rpc_ip}:{node.rpc_port}\n"
+        else:
+            label_text +=   f"API\n" \
+                            f"{node.ext_node_url}\n"
+        label_text +=       f"{node.owner}\n" \
+                            f"{node.features}\n" \
+                            f"{node.desc}"
+        self.root.ids.screen_intro.ids.oparea_intro.ids.lbl_node_selection.text = label_text
+
+    def switch_node(self, target_alias: Optional[str] = None):
+        """Method to switch the active node when the button is pressed."""
+        self.actual_node_object = self.nodemanager.return_next_node_instance()
+        if target_alias and target_alias.lower() in self.nodemanager.node_obj_dict:
+            while target_alias.lower() != self.actual_node_object.alias:
+                self.actual_node_object = self.nodemanager.return_next_node_instance()
+        print("-------------------------------------------------")
+        # Update Ribbon and label after switching the node
+        self.update_node_info()
+        # Update the node info label on the Welcome screen
+        self.update_node_label()
+        
         
 if __name__ == "__main__":
     from kivy.lang import Builder  # to freely pick kivy files

@@ -139,10 +139,12 @@ SalletScreenManager:
 #:set rel_size_ribbon (1, 0.075)
 #:set size_list (0.4, 1)
 #:set size_list_left (0.6, 1)
+#:set size_list_left_par (0.15, 1)
+#:set size_list_left_arg (0.45, 1)
 #:set size_list_comm_left (0.3, 1)
 #:set size_list_comm_center (0.5, 1)
 #:set size_list_comm_right (0.2, 1)
-#:set n_features 7
+#:set n_features 9
 #:set n_commands 3
 
 
@@ -328,13 +330,26 @@ SalletScreenManager:
                 size_btn: size_list
                 text_btn: "Asset management"
                 text_lbl: "Issuance and manage your own tokens. Leverage the only immutable ledger of the Planet."
-            LabelRowList:
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint: 1, 3/n_features
                 id: lbl_row_list_06
-                size_hint: 1, 1/n_features
                 size_lbl: size_list_left
                 size_btn: size_list
                 text_btn: "Node selection"
                 text_lbl: "Customize the way you publish your transaction"
+                ButtonInfo: ## LabelWelcomeList:
+                    size_hint: size_list
+                    text: "Node selection"
+                    on_release: app.switch_node()
+                LabelWelcomeListLeft:
+                    id: lbl_node_parameters
+                    size_hint: size_list_left_par
+                    text: "alias:\naccess:\npath:\nowner:\nfeatures:\ndescription:"
+                LabelWelcomeListLeft:
+                    id: lbl_node_selection
+                    size_hint: size_list_left_arg
+                    text: "Customize the way you publish your transaction"
             LabelRowList:
                 id: lbl_row_list_07
                 size_hint: 1, 1/n_features
@@ -871,11 +886,13 @@ SalletScreenManager:
     text_lbl: "N/A"
     size_btn: (1, 0.5)
     size_lbl: (1, 0.5)
+    btn_command: None
     orientation: "horizontal"
     size_hint: 1, 1/n_features
     ButtonInfo: ## LabelWelcomeList:
         size_hint: root.size_btn
         text: root.text_btn
+        on_release: root.btn_command
     LabelWelcomeListLeft:
         size_hint: root.size_lbl
         text: root.text_lbl
