@@ -70,7 +70,6 @@
 #:set clr_buttonbig_bck (0.486, 0.486, 0.486, 1)
 #:set clr_buttonbig_txt (1, 1, 1, 1)
 
-
 ## ------------------------------------------------------------------
 ## - Filelinks to be used globally:                                 -
 ## ------------------------------------------------------------------
@@ -101,16 +100,6 @@
 ## Root Widget definition: Screenhandler                        START   -
 ## ----------------------------------------------------------------------
 
-<SalletScreenManager@ScreenManager>:
-    transition: NoTransition()
-    ## transition: CardTransition(duration=0.2)
-    ## transition: FadeTransition(duration=0.05)
-    ## transition: FallOutTransition(duration=0.05)    # opposites v
-    ## transition: RiseInTransition(duration=0.08)     # opposites ^
-    ## transition: SlideTransition(duration=0.2)
-    ## transition: SwapTransition(duration=.5)
-    ## transition: WipeTransition()
-
 SalletScreenManager:
     id: "ThisIsYourROOTWidget"
     canvas.before:
@@ -122,10 +111,6 @@ SalletScreenManager:
             # source: background_image
     ScreenIntro:
         id: screen_intro
-    ScreenBtc:
-        id: screen_btc
-    ScreenBrowse:
-        id: screen_browse
     ScreenCommand:     ## <-- Add this line to include the new screen
         id: screen_command
 
@@ -144,8 +129,19 @@ SalletScreenManager:
 #:set size_list_comm_left (0.3, 1)
 #:set size_list_comm_center (0.5, 1)
 #:set size_list_comm_right (0.2, 1)
-#:set n_features 9
-#:set n_commands 3
+#:set n_features 2
+#:set n_commands 6
+
+
+<SalletScreenManager>:  ## parent class not shown to omit Factory: re-declaration WARNING
+    ## transition: NoTransition()
+    ## transition: CardTransition(duration=0.2)
+    ## transition: FadeTransition(duration=0.05)
+    ## transition: FallOutTransition(duration=0.05)    # opposites v
+    ## transition: RiseInTransition(duration=0.08)     # opposites ^
+    transition: SlideTransition(duration=0.2)
+    ## transition: SwapTransition(duration=.5)
+    ## transition: WipeTransition()
 
 
 <InScreenWindow@BoxLayout>:
@@ -170,45 +166,6 @@ SalletScreenManager:
             size_hint: rel_size_ribbon
             text_ribbon: "Bottom of Screen: Introduction"
             image_source: logo_img
-
-<ScreenBtc@Screen>:
-    name: "screen_btc"
-    InScreenWindow:
-        TitleLine:
-            id: screen_btc_titleline
-            size_hint: rel_size_t_line
-            display_title: "Sallet - Node manager - BEVOR"
-        NavBar:
-            id: navbar
-            size_hint: rel_size_navbar
-        OpAreaBtc:
-            size_hint: rel_size_oparea
-            id: oparea_btc
-        Ribbon:
-            id: ribbon_btc
-            size_hint: rel_size_ribbon
-            text_ribbon: "Bottom of Screen: Sallet"
-            image_source: logo_img
-
-
-<ScreenBrowse@Screen>:
-    name: "screen_browse"
-    InScreenWindow:
-        TitleLine:
-            id: screen_browse_titleline
-            size_hint: rel_size_t_line
-            display_title: "Browser"
-        NavBar:
-            id: navbar
-            size_hint: rel_size_navbar
-        OpAreaBrowse:
-            size_hint: rel_size_oparea
-            id: oparea_browse
-        Ribbon:
-            id: ribbon_browse
-            size_hint: rel_size_ribbon
-            text_ribbon: "Bottom of Screen: Browser"
-            image_source: logo_img
             
 <ScreenCommand@Screen>:
     name: "screen_command"
@@ -230,7 +187,7 @@ SalletScreenManager:
             image_source: logo_img
 
 
-<TitleLine@BoxLayout>:
+<TitleLine>:  ## parent class not shown to omit Factory: re-declaration WARNING
     display_title: "default"
     orientation: "horizontal"
     ScreenTitleLabel:
@@ -238,7 +195,7 @@ SalletScreenManager:
         font_size: fs_title
         text: root.display_title
 
-<NavBar@BoxLayout>:
+<NavBar>:  ## parent class not shown to omit Factory: re-declaration WARNING
     id: navbar
     orientation: "horizontal"
     size_hint: 1, 0.05
@@ -248,22 +205,12 @@ SalletScreenManager:
         text: "Welcome"
         on_release: root.on_release_navbar(self)
     ButtonScreenNav:
-        id: button_nav_btc
-        target: "screen_btc"
-        text: "Sallet"
-        on_release: root.on_release_navbar(self)
-    ButtonScreenNav:
-        id: button_nav_browse
-        target: "screen_browse"
-        text: "browse"
-        on_release: root.on_release_navbar(self)
-    ButtonScreenNav:
         id: button_nav_command
         target: "screen_command"
         text: "command"
         on_release: root.on_release_navbar(self)
         
-<Ribbon@BoxLayout>:
+<Ribbon>:  ## parent class not shown to omit Factory: re-declaration WARNING
     text_ribbon: "N/A"
     image_source: None
     orientation: "horizontal"
@@ -276,11 +223,11 @@ SalletScreenManager:
         size_hint: 0.05, 1
         source: root.image_source
 
-<OperationAreaBox@BoxLayout>:
+<OperationAreaBox>:  ## parent class not shown to omit Factory: re-declaration WARNING
     spacing: 5
     padding: 20, 0, 20, 0
 
-<OpAreaIntro@OperationAreaBox>:
+<OpAreaIntro>:  ## parent class not shown to omit Factory: re-declaration WARNING
     BoxLayout:
         orientation: "vertical"
         size_hint: 1, 1
@@ -295,45 +242,9 @@ SalletScreenManager:
         BoxLayout:
             size_hint: 1, 0.6
             orientation: "vertical"
-            LabelRowList:
-                id: lbl_row_list_01
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Coin selection"
-                text_lbl: "Manage and select your own UTXO's optimize at your will, hide your metadata, collect dust, organize coinjoins"
-            LabelRowList:
-                id: lbl_row_list_02
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Tiny digital footprint"
-                text_lbl: "Generate and keep your Keys off-line"
-            LabelRowList:
-                id: lbl_row_list_03
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Hidden entropy"
-                text_lbl: "Sign your transactions off-line"
-            LabelRowList:
-                id: lbl_row_list_04
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Privacy"
-                text_lbl: "Isolate sensitive data from the digital world"
-            LabelRowList:
-                id: lbl_row_list_05
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Asset management"
-                text_lbl: "Issuance and manage your own tokens. Leverage the only immutable ledger of the Planet."
             BoxLayout:
                 orientation: "horizontal"
-                size_hint: 1, 3/n_features
-                id: lbl_row_list_06
+                size_hint: 1, 1/n_features
                 size_lbl: size_list_left
                 size_btn: size_list
                 text_btn: "Node selection"
@@ -341,7 +252,7 @@ SalletScreenManager:
                 ButtonInfo: ## LabelWelcomeList:
                     size_hint: size_list
                     text: "Node selection"
-                    on_release: app.switch_node()
+                    on_release: app.on_release_switch_node()
                 LabelWelcomeListLeft:
                     id: lbl_node_parameters
                     size_hint: size_list_left_par
@@ -350,51 +261,12 @@ SalletScreenManager:
                     id: lbl_node_selection
                     size_hint: size_list_left_arg
                     text: "Customize the way you publish your transaction"
-            LabelRowList:
-                id: lbl_row_list_07
-                size_hint: 1, 1/n_features
-                size_lbl: size_list_left
-                size_btn: size_list
-                text_btn: "Control"
-                text_lbl: "Program your money: Construct custom made locking-scripts."
         BoxLayout:
             size_hint: 1, 0.1
             LabelPH:
                 size_hint: 1, 1
 
-<OpAreaBrowse@OperationAreaBox>:
-    orientation: "vertical"
-    BoxLayout:
-        orientation: "vertical"
-        size_hint: 1, 1
-        LabelWelcomeTitle:
-            size_hint: 1, 0.1
-            id: lbl_browse_title
-            text: "Browse"
-        BoxLayout:
-            orientation: "horizontal"
-            size_hint: 1, 0.05
-            TextInputSallet:
-                size_hint: 0.8, 1
-                id: txtinp_browse
-                hint_text: "Enter TX id"
-                on_text: root.on_textupdate_textinput(self)
-            ButtonSallet:
-                size_hint: 0.2, 1
-                id: btn_browse
-                text: "Find!"
-                on_release: root.on_buttonclick_browse(self)
-        ScrollViewSallet:
-            id: scrlv
-            size_hint: 1, 0.85
-            ##LabelBrowse:
-            TextInputBrowser:
-                height: scrlv.height
-                size_hint: 1, 1.1
-                id: lbl_tx_info
-                text: ""
-
-<OpAreaCommand@OperationAreaBox>:
+<OpAreaCommand>:  ## parent class not shown to omit Factory: re-declaration WARNING
     BoxLayout:
         orientation: "vertical"
         size_hint: 1, 1
@@ -403,122 +275,164 @@ SalletScreenManager:
             id: lbl_welcome_title
             text: "Welcome"
         LabelWelcomeIntro:
-            size_hint: 1, 0.20
+            size_hint: 1, 0.1
             id: lbl_welcome_intro
             text: "Welcome"
         BoxLayout:
             orientation: "vertical"
-            size_hint: 1, 1
-            CommandRowObjPure:
-                id: command_row_getconnectioncount
+            size_hint: 1, 0.4
+            BoxLayout:
+                orientation: "horizontal"
                 size_hint: 1, 1/n_commands
-                text_btn_comm_activate: "getconnectioncount"
-                text_lbl_param: "no parameters needed"
-                text_btn_comm_issue: "ENTER"
-                size_btn_comm_activate: size_list_comm_left
-                size_lbl_param: size_list_comm_center
-                size_btn_comm_issue: size_list_comm_right
-            CommandRowObjPure:
-                id: command_row_blockheight
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_02
+                    cmdnr: 2
+                    size_hint: size_list_comm_left
+                    text: "Nr. of connections"
+                    on_release: root.on_buttonclick_toggle(self)
+                LabelWelcomeListLeft:
+                    id: inp_cmd_02
+                    size_hint: size_list_comm_center
+                    text: ""
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_02
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_release_getconnectioncount()
+            BoxLayout:
+                orientation: "horizontal"
                 size_hint: 1, 1/n_commands
-                text_btn_comm_activate: "blockheight"
-                text_lbl_param: "no parameters needed"
-                text_btn_comm_issue: "ENTER"
-                size_btn_comm_activate: size_list_comm_left
-                size_lbl_param: size_list_comm_center
-                size_btn_comm_issue: size_list_comm_right
-            CommandRowObjParam:
-                id: command_row_getblockhash
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_03
+                    cmdnr: 3
+                    size_hint: size_list_comm_left
+                    text: "Blockchain length"
+                    on_release: root.on_buttonclick_toggle(self)
+                LabelWelcomeListLeft:
+                    id: inp_cmd_03
+                    size_hint: size_list_comm_center
+                    text: ""
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_03
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_release_getblockcount()
+            BoxLayout:
+                orientation: "horizontal"
                 size_hint: 1, 1/n_commands
-                text_btn_comm_activate: "getblockhash"
-                text_lbl_param: "no parameters needed"
-                text_btn_comm_issue: "ENTER"
-                size_btn_comm_activate: size_list_comm_left
-                size_lbl_param: size_list_comm_center
-                size_btn_comm_issue: size_list_comm_right
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_01
+                    cmdnr: 1
+                    size_hint: size_list_comm_left
+                    text: "Display TX"
+                    on_release: root.on_buttonclick_toggle(self)
+                TextInputSallet:
+                    id: inp_cmd_01
+                    size_hint: size_list_comm_center
+                    hint_text: "Enter TX id"
+                    on_text: root.on_textupdate_txid(self)
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_01
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_buttonclick_showtx(self)
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint: 1, 1/n_commands
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_04
+                    cmdnr: 4
+                    size_hint: size_list_comm_left
+                    text: "Blockhash by Sequence Nr."
+                    on_release: root.on_buttonclick_toggle(self)
+                TextInputSallet:
+                    id: inp_cmd_04
+                    size_hint: size_list_comm_center
+                    hint_text: "Enter block's sequence number!"
+                    on_text: root.on_textupdate_seqnr(self)
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_04
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_release_getblockhash()
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint: 1, 1/n_commands
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_05
+                    cmdnr: 5
+                    size_hint: size_list_comm_left
+                    text: "is TX confirmed"
+                    on_release: root.on_buttonclick_toggle(self)
+                TextInputSallet:
+                    id: inp_cmd_05
+                    size_hint: size_list_comm_center
+                    hint_text: "Enter TX id"
+                    on_text: root.on_textupdate_txid(self)
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_05
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_release_check_tx_confirmation()
+            BoxLayout:
+                orientation: "horizontal"
+                size_hint: 1, 1/n_commands
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_act_06
+                    cmdnr: 6
+                    size_hint: size_list_comm_left
+                    text: "get nr. of TX confirmations"
+                    on_release: root.on_buttonclick_toggle(self)
+                TextInputSallet:
+                    id: inp_cmd_06
+                    size_hint: size_list_comm_center
+                    hint_text: "Enter TX id"
+                    on_text: root.on_textupdate_txid(self)
+                ButtonInfo: ## LabelWelcomeList:
+                    id: btn_cmd_issue_06
+                    size_hint: size_list_comm_right
+                    text: "ENTER"
+                    on_release: root.on_release_count_tx_confirmation()
             ## Add more widgets here for the "command" screen as needed
-  
-<NodeLine@BoxLayout>:
-    node_alias: "node_alias"
-    node_address: "node_address"
-    LabelTitle:
-        size_hint: 0.5, 1
-        text: root.node_alias
-    LabelTitle:
-        size_hint: 0.5, 1
-        text: root.node_address
-
-<QRdisplay@BoxLayout>:
-    orientation: "horizontal"
-    ButtonSallet:
-        id: browse_qr_prev
-        add: -1
-        size_hint: 0.05, 0.2
-        pos_hint: {"center_y": 0.5}
-        text: "<"
-        on_release: root.on_buttonclick_qr_browse(self)
-    BoxLayout:
-        orientation: "vertical"
-        size_hint: 0.9, 1
-        LabelTitle:
-            id: qr_count
-            size_hint: 1, 0.1
-            text: "TopLayout"
-        QRPlotField:
-            id: qr_plot_layout
-            size_hint: 1, 0.9
-
-    ButtonSallet:
-        id: browse_qr_next
-        add: 1
-        size_hint: 0.05, 0.2
-        pos_hint: {"center_y": 0.5}
-        text: ">"
-        on_release: root.on_buttonclick_qr_browse(self)
-
+        ScrollViewSallet:
+            id: scrlv
+            size_hint: 1, 0.4
+            ##LabelBrowse:
+            TextInputBrowser:
+                height: scrlv.height
+                size_hint: 1, 1.1
+                id: lbl_tx_info
+                text: ""
+                
 
 #   ---------------------------------------------------------------------
 #   - Button:                                                   START   -
 #   ---------------------------------------------------------------------
 
-<ButtonSallet@Button>:
+<ButtonSallet>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## background_normal: ''
     ## background_down: ''
     background_color: clr_button_bck
     
  
-<ButtonInfo@ButtonSallet>:
+<ButtonInfo>:  ## parent class not shown to omit Factory: re-declaration WARNING
     font_size: fs_subtitle
     font_name: fn_subtitle
     text_size: self.size
     halign: 'left'  ## center, right, left
     valign: 'middle'  ## middle, top, bottom
     padding: 20, 0, 0, 0
-    color: clr_orange
+    color: clr_white
     
-<ButtonListitem@ButtonSallet>:
-    font_name: fn_button_small
-    font_size: fs_button_small
-    
-<ButtonFull@Button>:
-    background_color: clr_transp_bck
-    font_name: fn_button_big
-    font_size: fs_button_big
-    color: clr_button_txt
-    halign: 'center'  ## center, right, left
-    valign: 'middle'  ## middle, top, bottom
 
-<ButtonBig@ButtonSallet>:
+<ButtonBig>:  ## parent class not shown to omit Factory: re-declaration WARNING
     font_name: fn_button_big
     font_size: fs_button_big
     background_color: clr_orange
     color: clr_orange
     
-<ToggleButtonSallet@ToggleButton>:
-    background_color: clr_button_bck
-    color: clr_button_txt
 
-<ButtonScreenNav@ButtonSallet>:
+<ButtonScreenNav>:  ## parent class not shown to omit Factory: re-declaration WARNING
     background_color: clr_orange
     color: clr_orange
     font_name: fn_button
@@ -531,23 +445,6 @@ SalletScreenManager:
     halign: 'center'  ## center, right, left
     valign: 'middle'  ## middle, top, bottom
 
-<ButtonEntropySel@ButtonSallet>:
-    size_hint: 0.1, 1
-    font_name: fn_button_small
-    font_size: fs_button_small
-    target: ""
-    text_size: self.size
-    padding: (2, 2)
-    text: "ToggleButton"
-    halign: 'center'  ## center, right, left
-    valign: 'middle'  ## middle, top, bottom
-
-<ButtonToggleScan@ToggleButtonSallet>:
-    font_name: fn_button
-    font_size: fs_button
-    size_hint: 0.5, None # 0.15
-    height: dp(60)
-    pos_hint: {"center_x": .5, "center_y": .5}
     
 #   ---------------------------------------------------------------------
 #   - Button:                                                   ENDED   -
@@ -557,55 +454,9 @@ SalletScreenManager:
 #   - Label:                                                    START   -
 #   ---------------------------------------------------------------------
 
-<LabelListitem@Label>:
+<LabelListitem>:  ## parent class not shown to omit Factory: re-declaration WARNING
 
-<LabelInfo@Label>:
-    canvas.before:
-        Color:
-            rgba: clr_light_bck
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    color: 0, 0, 0, 1
-    font_size: fs_subsubtitle
-    font_name: fn_subsubtitle
-    text_size: self.size
-    halign: 'center'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
-
-<LabelBrowse@SelectableLabel>:
-    canvas.before:
-        Color:
-            rgba: clr_light_bck
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    padding: 5, 2, 5, 0
-    color: 0, 0, 0, 1
-    font_size: fs_text
-    font_name: fn_text
-    text_size: self.size
-    halign: 'left'  ## center, right, left
-    valign: 'top'  ## middle, top, bottom
-
-
-<LabelBalanceBtc@Label>:
-    color: clr_blue
-    font_size: fs_balance_btc
-    font_name: fn_balance_btc
-    text_size: self.size
-    halign: 'center'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
-
-<LabelBalanceSat@Label>:
-    color: clr_title_txt
-    font_size: fs_balance_sat
-    font_name: fn_balance_sat
-    text_size: self.size
-    halign: 'center'  ## center, right, left
-    valign: 'top'  ## middle, top, bottom
-
-<LabelWelcomeTitle@Label>:
+<LabelWelcomeTitle>: ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_blue
@@ -619,7 +470,7 @@ SalletScreenManager:
     halign: 'center'  ## center, right, left
     valign: 'center'  ## middle, top, bottom
 
-<LabelWelcomeIntro@Label>:
+<LabelWelcomeIntro>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_blue
@@ -635,7 +486,7 @@ SalletScreenManager:
     halign: 'justify'  ## center, right, left, justify
     valign: 'top'  ## middle, top, bottom
 
-<LabelWelcomeList@Label>:
+<LabelWelcomeList>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_blue
@@ -651,7 +502,7 @@ SalletScreenManager:
     halign: 'left'  ## center, right, left
     valign: 'middle'  ## middle, top, bottom
 
-<LabelWelcomeListLeft@Label>:
+<LabelWelcomeListLeft>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_blue
@@ -667,51 +518,8 @@ SalletScreenManager:
     halign: 'justify'  ## center, right, left
     valign: 'middle'  ## middle, top, bottom
 
-<LabelWelcomeListRight@Label>:
-    ## canvas.before:
-    ##     Color:
-    ##         rgba: clr_blue
-    ##     Rectangle:
-    ##         pos: self.pos
-    ##         size: self.size
-    color: clr_white
-    font_size: fs_subtitle
-    font_name: fn_subtitle
-    text_size: self.size
-    ## padding: 80, 0, 10, 0 ##left, top, right, bottom
-    line_height: 1.2
-    halign: 'right'  ## center, right, left
-    valign: 'top'  ## middle, top, bottom
-
-<LabelTitle@Label>:
-    ## canvas.before:
-    ##     Color:
-    ##         rgba: clr_light_bck
-    ##     Rectangle:
-    ##         pos: self.pos
-    ##         size: self.size
-    color: clr_blue
-    font_size: fs_title
-    font_name: fn_title
-    text_size: self.size
-    halign: 'center'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
-
-<LabelSubTitle@Label>:
-    ## canvas.before:
-    ##     Color:
-    ##         rgba: clr_wallet_bck
-    ##     Rectangle:
-    ##         pos: self.pos
-    ##         size: self.size
-    color: clr_green
-    font_size: fs_subtitle
-    font_name: fn_subtitle
-    text_size: self.size
-    halign: 'center'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
     
-<LabelSubSubTitle@Label>:
+<LabelSubSubTitle>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_wallet_bck
@@ -725,35 +533,7 @@ SalletScreenManager:
     halign: 'center'  ## center, right, left
     valign: 'center'  ## middle, top, bottom
 
-<LabelLead@LabelListitem>:
-    ## canvas.before:
-    ##     Color:
-    ##         rgba: clr_wallet_bck
-    ##     Rectangle:
-    ##         pos: self.pos
-    ##         size: self.size
-    color: clr_green
-    font_size: fs_text
-    font_name: fn_text
-    text_size: self.size
-    halign: 'left'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
-
-<LabelEnd@LabelListitem>:
-    ## canvas.before:
-    ##     Color:
-    ##         rgba: clr_wallet_bck
-    ##     Rectangle:
-    ##         pos: self.pos
-    ##         size: self.size
-    color: clr_yellow
-    font_size: fs_subsubtitle
-    font_name: fn_subsubtitle
-    text_size: self.size
-    halign: 'right'  ## center, right, left
-    valign: 'center'  ## middle, top, bottom
-    
-<ScreenTitleLabel@Label>:
+<ScreenTitleLabel>:  ## parent class not shown to omit Factory: re-declaration WARNING
     font_size: fs_title
     font_name: fn_title
     color: clr_orange
@@ -768,7 +548,7 @@ SalletScreenManager:
 #   - ScrollView:                                               START   -
 #   ---------------------------------------------------------------------
 
-<ScrollViewSallet@ScrollView>:
+<ScrollViewSallet>:  ## parent class not shown to omit Factory: re-declaration WARNING
     canvas.before:
         Color:
             rgba: clr_transp_bck
@@ -792,7 +572,7 @@ SalletScreenManager:
 #   - TextInput::                                               START   -
 #   ---------------------------------------------------------------------
 
-<TextInputSallet@TextInput>:
+<TextInputSallet>:  ## parent class not shown to omit Factory: re-declaration WARNING
     font_name: fn_data_normal
     font_size: fs_data_normal
     text_size: self.size
@@ -807,7 +587,7 @@ SalletScreenManager:
     halign: 'left'  ## center, right, left
     valign: 'middle'  ## middle, top, bottom
     
-<TextInputBrowser@TextInput>:
+<TextInputBrowser>:  ## parent class not shown to omit Factory: re-declaration WARNING
     ## canvas.before:
     ##     Color:
     ##         rgba: clr_light_bck
@@ -815,7 +595,7 @@ SalletScreenManager:
     ##         pos: self.pos
     ##         size: self.size
     padding: 5, 2, 5, 2
-    hint_text: "transaction display area"
+    hint_text: "your answers will be displayed here"
     ## focus: False
     auto_indent: True  ### ?????
     color: 0, 0, 0, 1
@@ -829,70 +609,3 @@ SalletScreenManager:
 #   ---------------------------------------------------------------------
 #   - TextInput::                                               ENDED   -
 #   ---------------------------------------------------------------------
-
-<UtxoRowObj@BoxLayout>:
-    size_hint: 1, None
-    height: 20
-
-<OutputRowObj@BoxLayout>:
-    size_hint: 1, None
-    height: 20
-
-<NodeRowObj@BoxLayout>:
-    size_hint: 1, None
-    height: 30
-    
-<CommandRowObjPure@BoxLayout>:
-    text_btn_comm_activate: "N/A"
-    size_btn_comm_activate: (1, 0.5)
-    text_lbl_param: "N/A"
-    size_lbl_param: (1, 0.5)
-    text_btn_comm_issue: "N/A"    
-    size_btn_comm_issue: (1, 0.5)
-    orientation: "horizontal"
-    size_hint: 1, 1/n_commands
-    ButtonInfo: ## LabelWelcomeList:
-        size_hint: root.size_btn_comm_activate
-        text: root.text_btn_comm_activate
-    LabelWelcomeListLeft:
-        size_hint: root.size_lbl_param
-        text: root.text_lbl_param
-    ButtonInfo: ## LabelWelcomeList:
-        size_hint: root.size_btn_comm_issue
-        text: root.text_btn_comm_issue
-
-<CommandRowObjParam@BoxLayout>:
-    text_btn_comm_activate: "N/A"
-    size_btn_comm_activate: (1, 0.5)
-    text_lbl_param: "N/A"
-    size_lbl_param: (1, 0.5)
-    text_btn_comm_issue: "N/A"    
-    size_btn_comm_issue: (1, 0.5)
-    orientation: "horizontal"
-    size_hint: 1, 1/n_commands
-    ButtonInfo: ## LabelWelcomeList:
-        size_hint: root.size_btn_comm_activate
-        text: root.text_btn_comm_activate
-    TextInputSallet:
-        size_hint: root.size_lbl_param
-        text: root.text_lbl_param
-    ButtonInfo: ## LabelWelcomeList:
-        size_hint: root.size_btn_comm_issue
-        text: root.text_btn_comm_issue
-
-
-<LabelRowList@BoxLayout>:
-    text_btn: "N/A"
-    text_lbl: "N/A"
-    size_btn: (1, 0.5)
-    size_lbl: (1, 0.5)
-    btn_command: None
-    orientation: "horizontal"
-    size_hint: 1, 1/n_features
-    ButtonInfo: ## LabelWelcomeList:
-        size_hint: root.size_btn
-        text: root.text_btn
-        on_release: root.btn_command
-    LabelWelcomeListLeft:
-        size_hint: root.size_lbl
-        text: root.text_lbl

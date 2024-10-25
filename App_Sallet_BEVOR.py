@@ -6,26 +6,63 @@ import sys
 import cv2
 import dotenv
 import inspect
+import logging
+from functools import wraps
 from typing import Optional
 from kivy.app import App  # necessary for the App class
 from kivy.uix.screenmanager import ScreenManager
-from kivy.core.window import Window
+from kivy.properties import ListProperty
 from kivy.clock import Clock
 from kivy.uix.image import AsyncImage
 from kivy.graphics.texture import Texture
 
 from SalletBasePackage.WidgetClasses import *
-from SalletBasePackage import SQL_interface as sql, models
-from SalletBasePackage import units
+from SalletBasePackage import SQL_interface as sql
+# from SalletBasePackage import units
 from SalletBasePackage import DataDisplay as DaDi
 from SalletNodePackage.NodeManager import NODEManager
 from SalletNodePackage.BitcoinNodeObject import Node as btcNode
 from sql_bases.sqlbase_node.sqlbase_node import Node as sqlNode
-
-
 from kivy.config import Config
+import config as conf
 
-DOTENV_PATH = "./.env"
+lg = logging.getLogger()
+
+PALETTES = conf.PALETTES
+
+
+def log_button_click(func):
+    """=== Decorator for logging - by Sziller ==="""
+    @wraps(func)  # Preserve the original function's metadata
+    def wrapper(self, *args, **kwargs):
+        """=== Wrapper =================================================================================================
+        Wrapper function that logs the method name before executing the original method.
+        :param self:    -   neccessary for the wrapper
+        :param args:    -   Positional arguments passed to the original method.
+        :param kwargs:  -   Keyword arguments passed to the original method.
+        :return: The result of the original method.
+        ========================================================================================== by Sziller ==="""
+        cim = func.__name__  # Get the method name
+        lg.info(f"[clicked     ] - {cim}")
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
+def run_internal_reset(func):
+    """=== Decorator to run internal method - by Sziller ==="""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        """=== Wrapper =================================================================================================
+        Wrapper function that logs the method name before executing the original method.
+        :param self:    -   neccessary for the wrapper
+        :param args:    -   Positional arguments passed to the original method.
+        :param kwargs:  -   Keyword arguments passed to the original method.
+        :return: The result of the original method.
+        ========================================================================================== by Sziller ==="""
+        self._reset_stored_data()  # Run the internal method
+        return func(self, *args, **kwargs)
+    return wrapper
+
 
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
@@ -52,22 +89,12 @@ class SalletScreenManager(ScreenManager):
                 "seq": 0,
                 'inst': "button_nav_intro",
                 'down': ["button_nav_intro"],
-                'normal': ["button_nav_btc", "button_nav_browse", "button_nav_command"]},
-            "screen_btc": {
-                "seq": 1,
-                'inst': 'button_nav_btc',
-                'down': ['button_nav_btc'],
-                'normal': ["button_nav_intro", "button_nav_browse", "button_nav_command"]},
-            "screen_browse": {
-                "seq": 2,
-                'inst': "button_nav_browse",
-                'down': ["button_nav_browse"],
-                'normal': ["button_nav_intro", "button_nav_btc", "button_nav_command"]},
+                'normal': ["button_nav_command"]},
             "screen_command": {
                 "seq": 3,
                 'inst': "button_nav_command",
                 'down': ["button_nav_command"],
-                'normal': ["button_nav_intro", "button_nav_btc", "button_nav_browse"]}
+                'normal': ["button_nav_intro"]}
             }
 
 
@@ -127,204 +154,126 @@ class OpAreaIntro(OperationAreaBox):
         print("Started: {}".format(self.ccn))
 
 
-class QRdisplay(BoxLayout):
-    ccn = inspect.currentframe().f_code.co_name
-    qr_list = os.listdir("./qrcodes")
-    qr_counter = 0
-    
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        print("Started: {}".format(self.ccn))
-
-    def on_buttonclick_qr_browse(self, inst):
-        """=== Method name: on_buttonclick_qr_browse ===================================================================
-        ========================================================================================== by Sziller ==="""
-        print("Pushed from QRdisplay")
-        self.qr_counter += inst.add
-        if self.qr_counter >= len(self.qr_list): self.qr_counter = 0
-        if self.qr_counter < 0: self.qr_counter = len(self.qr_list) - 1
-        self.ids.qr_count.text = str(self.qr_counter)
-        self.ids.qr_plot_layout.remove_widget(self.ids.qr_plot_layout.displayed_qr)
-        passed = AsyncImage(source="./qrcodes/" + self.qr_list[self.qr_counter])
-        self.ids.qr_plot_layout.swap_displayed_qr_widget(received=passed)
-        
-        
-class QRPlotField(BoxLayout):
-    def __init__(self, **kwargs):
-        super(QRPlotField, self).__init__(**kwargs)
-        self.displayed_qr = Label(text="Images will be displayed here")
-        self.add_widget(self.displayed_qr)
-
-    def swap_displayed_qr_widget(self, received):
-        """=== Method name: swap_displayed_qr_widget ===================================================================
-        ========================================================================================== by Sziller ==="""
-        print("Pushed from QRPlotLayout")
-        self.remove_widget(self.displayed_qr)
-        self.displayed_qr = received
-        self.add_widget(self.displayed_qr)
-
-
-class ScanArea(BoxLayout):
-    def __init__(self, **kwargs):
-        super(ScanArea, self).__init__(**kwargs)
-        self.orientation = 'horizontal'
-        self.cam = cv2.VideoCapture(0)
-        self.cam.set(3, 1920)
-        self.cam.set(4, 1080)
-
-        self.fps = 60
-        self.schedule = None
-        self.collected_strings = []
-
-    def start_scanning(self):
-        """=== Method name: start_scanning =============================================================================
-        ========================================================================================== by Sziller ==="""
-        self.schedule = Clock.schedule_interval(self.update, 1.0 / self.fps)
-
-    def stop_scanning(self):
-        """=== Method name: stop_scanning ==============================================================================
-        ========================================================================================== by Sziller ==="""
-        self.schedule.cancel()
-        for _ in self.collected_strings:
-            print(_)
-
-    def update(self, dt):
-        """=== Method name: update =====================================================================================
-        ========================================================================================== by Sziller ==="""
-        if True:
-            ret, frame = self.cam.read()
-            if ret:
-                buf1 = cv2.flip(frame, 0)
-                buf = buf1.tobytes()
-                image_texture = Texture.create(size=(frame.shape[1], frame.shape[0]), colorfmt='bgr')
-                image_texture.blit_buffer(buf, colorfmt='bgr', bufferfmt='ubyte')
-
-                self.ids.img.texture = image_texture
-
-                barcodes = pyzbar.decode(frame)
-
-                if not barcodes:
-                    scan_img = cv2.putText(frame, 'Scanning', (50, 75), cv2.FONT_HERSHEY_DUPLEX, 1.5, (0, 255, 255), 2)
-                    scan_buf = cv2.flip(scan_img, 0)
-                    scan_buf = scan_buf.tobytes()
-                    scan_texture = Texture.create(size=(scan_img.shape[1], scan_img.shape[0]), colorfmt='bgr')
-                    scan_texture.blit_buffer(scan_buf, colorfmt='bgr', bufferfmt='ubyte')
-
-                    self.ids.img.texture = scan_texture
-
-                else:
-                    for barcode in barcodes:
-                        (x, y, w, h) = barcode.rect
-                        rectangle_img = cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 7)
-                        rectangle_buf = cv2.flip(rectangle_img, 0)
-                        rectangle_buf = rectangle_buf.tobytes()
-                        rectangle_texture = Texture.create(size=(rectangle_img.shape[1], rectangle_img.shape[0]),
-                                                           colorfmt='bgr')
-                        rectangle_texture.blit_buffer(rectangle_buf, colorfmt='bgr', bufferfmt='ubyte')
-
-                        self.ids.img.texture = rectangle_texture
-
-                        actual_text = str(barcode.data.decode("utf-8"))
-                        print(actual_text)
-                        if actual_text not in self.collected_strings:
-                            self.collected_strings.append(actual_text)
-
-
-class OpAreaQrIn(OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-    
-    def __init__(self, **kwargs):
-        super(OpAreaQrIn, self).__init__(**kwargs)
-    
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        print("Started: {}".format(self.ccn))
-        
-    def on_toggle_scan_qr(self, inst):
-        """=== Method name: on_toggle_scan_qr ==========================================================================
-        ========================================================================================== by Sziller ==="""
-        
-        if inst.state == "normal":
-            self.ids.scan_area.stop_scanning()
-            inst.text = "scanning stopped"
-            self.ids.scan_area.ids.img.texture = None
-            self.ids.scan_area.ids.img.reload()
-        else:
-            self.ids.scan_area.start_scanning()
-            inst.text = "now scanning..."
-        print("toggled camera on/off")
-
-
-class OpAreaBtc (OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-    
-    def __init__(self, **kwargs):
-        super(OpAreaBtc, self).__init__(**kwargs)
-    
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        print("Started: {}".format(self.ccn))
-        
-        
-class OpAreaNft (OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-    
-    def __init__(self, **kwargs):
-        super(OpAreaNft, self).__init__(**kwargs)
-        
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        print("Started: {}".format(self.ccn))
-
-
-class OpAreaMint(OperationAreaBox):
+class OpAreaCommand(OperationAreaBox):
+    """
+    This class represents the operation area for the Command screen.
+    It contains manually defined CommandRowObj instances and manages their activation and command execution.
+    """
     ccn = inspect.currentframe().f_code.co_name
 
     def __init__(self, **kwargs):
-        super(OpAreaMint, self).__init__(**kwargs)
-
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        print("Started: {}".format(self.ccn))
-
-
-class OpAreaBrowse(OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-
-    def __init__(self, **kwargs):
-        super(OpAreaBrowse, self).__init__(**kwargs)
+        super(OpAreaCommand, self).__init__(**kwargs)
         self.memorized_btn_color: tuple or None = None  # workaround to gain button color from .kv
         self.memorized_btn_text: str or None = None  # workaround to gain button text from .kv
-
+        self.list_of_rows = [1, 2, 3, 4, 5, 6]
+        
+        self.tx_id: Optional[str]       = None
+        self.blk_seqnr: Optional[int]   = None
+        self.blk_hash: Optional[str]    = None
+        
+    def _reset_stored_data(self):
+        """ Private instance method ====================================================================================
+        Resets text entry defined parameters
+        ========================================================================================== by Sziller ==="""
+        self.tx_id: str = ''
+        self.blk_seqnr: int = 0
+        self.blk_hash: str = ""
+        
     def on_init(self):
         """=== Method name: on_init ====================================================================================
         Default method to run right after startup (or whenever defaulting back to initial state is necessary)
         ========================================================================================== by Sziller ==="""
-        pass
-        
-    def on_textupdate_textinput(self, inst):
-        pass
-        # print(inst.text)
+        for rownr in self.list_of_rows:
+            self._deactivate_row(row_nr=rownr)
     
-    def on_buttonclick_browse(self, inst):
+    def _row_activation_mngr(self, row_nr):
+        """ Private instance method ====================================================================================
+        Calling widget manipulation methods
+        ========================================================================================== by Sziller ==="""
+        self._activate_row(row_nr=row_nr)
+        for rownr in self.list_of_rows:
+            self._deactivate_row(row_nr=rownr) if rownr != row_nr else None
+
+    def _activate_row(self, row_nr: int):
+        """=== Instance method =========================================================================================
+        Activates the specified row , while disabling its toggle button
+        ========================================================================================== by Sziller ==="""
+        self.ids['btn_cmd_act_{:>02}'.format(row_nr)].disabled = True
+        self.ids['btn_cmd_issue_{:>02}'.format(row_nr)].disabled = False
+        self.ids['inp_cmd_{:>02}'.format(row_nr)].disabled = False
+        
+    def _deactivate_row(self, row_nr: int):
+        """=== Instance method =========================================================================================
+        Deativates the specified row , while enabling its toggle button
+        ========================================================================================== by Sziller ==="""
+        self.ids['btn_cmd_act_{:>02}'.format(row_nr)].disabled = False
+        self.ids['btn_cmd_issue_{:>02}'.format(row_nr)].disabled = True
+        self.ids['inp_cmd_{:>02}'.format(row_nr)].disabled = True
+        self.ids['inp_cmd_{:>02}'.format(row_nr)].text = ""
+        self.ids.lbl_tx_info.text = ""
+
+    def on_textupdate_txid(self, inst):
+        self.tx_id = str(inst.text)
+    
+    def on_textupdate_seqnr(self, inst):
+        try:
+            self.blk_seqnr = int(inst.text)
+        except ValueError:
+            print ("SHIT")
+
+    @log_button_click
+    def on_release_getconnectioncount(self):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
+        data_as_displayed = "The Node's number of connection is: {}".format(
+            App.get_running_app().actual_node_object.nodeop_getconnectioncount())
+        self.ids.lbl_tx_info.text = data_as_displayed
+        
+    @log_button_click
+    def on_release_getblockcount(self):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
+        data_as_displayed = "Current blockcount is: {}".format(
+            App.get_running_app().actual_node_object.nodeop_getblockcount())
+        self.ids.lbl_tx_info.text = data_as_displayed
+    
+    @log_button_click
+    def on_release_getblockhash(self):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
+        data_as_displayed = "Block Nr. {}'s hash is:\n {}".format(self.blk_seqnr,
+            App.get_running_app().actual_node_object.nodeop_getblockhash(sequence_nr=self.blk_seqnr))
+        self.ids.lbl_tx_info.text = data_as_displayed
+
+    @log_button_click
+    def on_release_check_tx_confirmation(self):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
+        data_as_displayed = "Transaction is {}".format(
+            {True: 'CONFIRMED', False: 'NOT CONFIRMED YET'}
+            [App.get_running_app().actual_node_object.nodeop_check_tx_confirmation(tx_hash=self.tx_id)])
+        self.ids.lbl_tx_info.text = data_as_displayed
+
+    @log_button_click
+    def on_release_count_tx_confirmation(self):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
+        data_as_displayed = "Transaction has confirmations: {}".format(
+            App.get_running_app().actual_node_object.nodeop_confirmations(tx_hash=self.tx_id))
+        self.ids.lbl_tx_info.text = data_as_displayed
+
+    @log_button_click
+    def on_buttonclick_showtx(self, inst):
+        """=== Instance method: buttonclick ============================================================================
+        ========================================================================================== by Sziller ==="""
         if self.memorized_btn_color is None:
             self.memorized_btn_color = inst.background_color
             self.memorized_btn_text = inst.text
-        
-        tx_id = self.ids.txtinp_browse.text
+
+        tx_id = self.tx_id
         print(tx_id)
         returned_json = {}
-        
+
         try:
             returned_json = App.get_running_app().actual_node_object.nodeop_getrawtransaction(tx_hash=tx_id, verbose=1)
             inst.background_color = self.memorized_btn_color
@@ -334,94 +283,13 @@ class OpAreaBrowse(OperationAreaBox):
             inst.text = "INVALID"
         data_as_displayed = DaDi.rec_data_plotter(data=returned_json, string="")
         self.ids.lbl_tx_info.text = data_as_displayed
-        
-        
-class OpAreaSend(OperationAreaBox):
-    ccn = inspect.currentframe().f_code.co_name
-    
-    def __init__(self, **kwargs):
-        super(OpAreaSend, self).__init__(**kwargs)
-        self.node_rowobj_dict_in_opareasend: dict = {}
-        self.used_node: BtcNode.Node or None = None
-        
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
-        ========================================================================================== by Sziller ==="""
-        self.nodemanager = NODEManager(session_in=App.get_running_app().db_session,
-                                       dotenv_path="./.env",
-                                       row_obj=sqlNode.__table__)
-        self.display_node_rowobj_list()
-    
-    def on_btn_release_broadcast(self):
-        """=== Method name: on_btn_release_broadcast ===================================================================
-        actions taken when button pushed.
-        ========================================================================================== by Sziller ==="""
-        print("PUSHED: on_btn_release_broadcast - says: {}".format(self.ccn))
-    
-    def on_btn_release_cancel(self):
-        """=== Method name: on_btn_release_cancel ======================================================================
-        actions taken when button pushed.
-        ========================================================================================== by Sziller ==="""
-        print("PUSHED: on_btn_release_cancel - says: {}".format(self.ccn))
-    
-    # def display_node_data(self):
-    #     """=== Method name: display_node_data ========================================================================
-    #     Method updates Utxo balance Label in current Object instance of OpAreaTx(OperationAreaBox)
-    #     ========================================================================================== by Sziller ==="""
-    #     self.ids.lbl_node_data.text = str(self.nodemanager.node_list)
-    
-    def display_node_rowobj_list(self):
-        """=== Method name: add_new_node_rowobj ========================================================================
-        Method checks number of outputs, and adds a new OutputRowObj to the output_display_area.
-        It also updates any fields update logically affects.
-        ========================================================================================== by Sziller ==="""
-        for alias, node_rowobj in self.nodemanager.node_obj_dict.items():
-            print(node_rowobj)
-            newline = NodeRowObj(parent_op_area=self, node_obj=node_rowobj)
-            self.ids.node_display_area.add_widget(newline)  # only add if key does not exist!!!
-            self.node_rowobj_dict_in_opareasend[alias] = newline
-        
-    def use_node(self, node: btcNode):
-        """=== Method name: use_node ===================================================================================
-        ========================================================================================== by Sziller ==="""
-        print(node)
-        used_alias = node.alias
-        for alias, node_rowobj in self.node_rowobj_dict_in_opareasend.items():
-            if alias is not used_alias:
-                node_rowobj.disabled = False
-        self.ids.used_node_data.node_alias = node.alias
-        self.ids.used_node_data.node_address = node.rpc_ip + ":" + str(node.rpc_port)
 
-
-class OpAreaCommand(OperationAreaBox):
-    """
-    This class represents the operation area for the Command screen.
-    It contains manually defined CommandRowObj instances and manages their activation and command execution.
-    """
-
-    def __init__(self, **kwargs):
-        super(OpAreaCommand, self).__init__(**kwargs)
-        
-    def on_init(self):
-        """=== Method name: on_init ====================================================================================
-        Default method to run right after startup (or whenever defaulting back to initial state is necessary)
+    @log_button_click
+    @run_internal_reset
+    def on_buttonclick_toggle(self, inst):
+        """=== Instance method: buttonclick ============================================================================
         ========================================================================================== by Sziller ==="""
-        pass
-
-    def activate_row(self, active_row):
-        """
-        Activates the specified row and deactivates all other rows.
-        """
-        for row in self.command_rows:
-            row.set_active(row == active_row)
-
-    def execute_command(self, row_number, parameters):
-        """
-        Executes the command for the given row with the provided parameters.
-        """
-        print(f"Executing command from row {row_number} with parameters: {parameters}")
-        # Add your logic for executing the command here
+        self._row_activation_mngr(inst.cmdnr)
 
 
 class SalletBEVOR(App):
@@ -431,14 +299,21 @@ class SalletBEVOR(App):
     Instantiation should - contrary to what is used on the net - happen by assigning it to a variable name.
     :param window_content:
     ============================================================================================== by Sziller ==="""
-    def __init__(self, window_content: str, csm: float = 1.0, dotenv_path="./.env"):
+    
+    def __init__(self, window_content: str, window_title: str, csm: float = 1.0, dotenv_path="./.env"):
         super(SalletBEVOR, self).__init__()
-        self.window_content = window_content
-        self.content_size_multiplier = csm
-        self.dotenv_path: str = dotenv_path
+        self.window_content                 = window_content
+        self.content_size_multiplier: float = csm
+        self.palettes: Optional[list]       = None
+        self.current_palette_index: int     = 0
+        self.current_permutation_index: int = 0
+        self.current_palette: Optional      = None
+        # self.current_palette                = self.palettes[0]  # Use the first palette initially
+        # ----------------------------------------------------------------------
+        self.dotenv_path: str               = dotenv_path
         dotenv.load_dotenv(self.dotenv_path)
-        self.title: str = "Sallet - Bevor: Command your Node"
-        self.balance_onchain_sats: int = 0
+        self.title: str                     = window_title
+        self.balance_onchain_sats: int      = 0
         # --- Database settings ---------------------------------------------   - Database settings -   START   -
         self.db_session = sql.createSession(db_path=os.getenv("DB_PATH_BEVOR"),
                                             style=os.getenv("DB_STYLE_BEVOR"))
@@ -456,6 +331,8 @@ class SalletBEVOR(App):
         self.actual_node_object: Optional[btcNode] = None
         # --- Node related settings -------------------------------------  Node related settings    -   START   -
 
+        
+
     def change_screen(self, screen_name, screen_direction="left"):
         """=== Method name: change_screen ==============================================================================
         Use this screenchanger instead of the built-in method for more customizability and to enable further
@@ -468,7 +345,7 @@ class SalletBEVOR(App):
 
     def build(self):
         """=== Method name: ============================================================================
-        ========================================================================================== by Sziller ==="""
+        ========================================================================================== by Sziller ==="""        
         return self.window_content
     
     def on_start(self):
@@ -481,6 +358,9 @@ class SalletBEVOR(App):
                 if widget_name.startswith("oparea_"):
                     widget_obj.on_init()
         # --- Initiating each OpArea's <on_init> methods                                        ENDED   -
+
+        SalletBEVOR.color_A = ListProperty([1, 0, 0, 1])
+        SalletBEVOR.color_B = ListProperty([0, 1, 0, 1])
 
         # --- Navigation-button handling                                                        START   -
         for navname, navbutton in self.root.ids.screen_intro.ids.navbar.ids.items():
@@ -496,7 +376,7 @@ class SalletBEVOR(App):
         # --- Filling in large text-fields of Labels                                            ENDED   -
         # --- Setting default Node                                                              START   -
         self.nodemanager.get_key_guided_rowdict()
-        self.switch_node(target_alias=os.getenv("DEFAULT_NODE"))
+        self.on_release_switch_node(target_alias=os.getenv("DEFAULT_NODE"))
         # --- Setting default Node                                                              ENDED   -
     
     def update_node_info(self):
@@ -508,8 +388,6 @@ class SalletBEVOR(App):
         print(self.root.ids.screen_intro.ids.ribbon_intro.text_ribbon)
         msg = "Node: {} - {}".format(alias, {True: "RPC", False: "API"}[is_rpc])
         self.root.ids.screen_intro.ids.ribbon_intro.text_ribbon = msg
-        self.root.ids.screen_btc.ids.ribbon_btc.text_ribbon = msg
-        self.root.ids.screen_browse.ids.ribbon_browse.text_ribbon = msg
         self.root.ids.screen_command.ids.ribbon_command.text_ribbon = msg
 
     def update_node_label(self):
@@ -527,7 +405,8 @@ class SalletBEVOR(App):
                             f"{node.desc}"
         self.root.ids.screen_intro.ids.oparea_intro.ids.lbl_node_selection.text = label_text
 
-    def switch_node(self, target_alias: Optional[str] = None):
+    @log_button_click
+    def on_release_switch_node(self, target_alias: Optional[str] = None):
         """Method to switch the active node when the button is pressed."""
         self.actual_node_object = self.nodemanager.return_next_node_instance()
         if target_alias and target_alias.lower() in self.nodemanager.node_obj_dict:
@@ -538,41 +417,67 @@ class SalletBEVOR(App):
         self.update_node_info()
         # Update the node info label on the Welcome screen
         self.update_node_label()
-        
-        
+
+    @log_button_click
+    def on_release_switch_template(self, target_palette: Optional[list] = None):
+        """Method to switch app appearance when the button is pressed."""
+        print("next palette")
+
+    @log_button_click
+    def on_release_permute_colors(self, target_permutation: Optional[list] = None):
+        """Method to permutate colors of current palette when the button is pressed."""
+        print("next color order")
+
+
 if __name__ == "__main__":
+    import sys
+    import argparse
     from kivy.lang import Builder  # to freely pick kivy files
+    from kivy.core.window import Window
+    
+    DOTENV_PATH = "./.env"
+    
+    def parse_args():
+        """=== Parser ===
+        by Sziller ==="""
+        parser = argparse.ArgumentParser(description="Run the Kivy application with options.")
+        parser.add_argument("--kv-file", type=str, help="Path to the .kv file to load.")
+        parser.add_argument("--fullscreen", action="store_true", help="Run in fullscreen mode.")
+        parser.add_argument("--window-size", type=str, help="Window size in WIDTHxHEIGHT format.")
+        return parser.parse_args()
+    
+    # Parse command-line arguments
+    args = parse_args()
 
-    # Define different display settings based on an index.
-    # 0: Full-screen on any display,
-    # 1: Portrait,
-    # 2: Elongated Portrait,
-    # 3: Raspberry Pi touchscreen - Landscape,
-    # 4: Raspberry Pi touchscreen - Portrait,
-    # 5: Large square
-    display_settings = {0: {'fullscreen': False, 'run': Window.maximize},  # Full-screen on any display
-                        1: {'fullscreen': False, 'size': (600, 1000)},  # Portrait
-                        2: {'fullscreen': False, 'size': (500, 1000)},  # Portrait elongated
-                        3: {'fullscreen': False, 'size': (640, 480)},  # Raspi touchscreen - landscape
-                        4: {'fullscreen': False, 'size': (480, 640)},  # Raspi touchscreen - portrait
-                        5: {'fullscreen': False, 'size': (1200, 1200)}  # Large square
-                        }
-
-    dotenv.load_dotenv(DOTENV_PATH)
-    style_code = int(os.getenv("SCREENMODE_BEVOR"))
+    display_settings    = conf.DISPLAY_SETTINGS
+    style_code          = conf.SCREENMODE_BEVOR
 
     Window.fullscreen = display_settings[style_code]['fullscreen']
-    if 'size' in display_settings[style_code].keys(): Window.size = display_settings[style_code]['size']
-    if 'run' in display_settings[style_code].keys(): display_settings[style_code]['run']()
+    if 'size' in display_settings[style_code].keys():
+        Window.size = display_settings[style_code]['size']
+
+    if args.window_size:
+        try:
+            width, height = map(int, args.window_size.split('x'))
+            Window.size = (width, height)
+        except ValueError:
+            print("Invalid window size format. Use WIDTHxHEIGHT (e.g., 800x600).")
+
+    if 'run' in display_settings[style_code].keys():
+        display_settings[style_code]['run']()
 
     # Load a specified Kivy file from the command-line argument or a default file.
     try:
-        content = Builder.load_file(str(sys.argv[1]))
-    except IndexError:
-        content = Builder.load_file("kivy_sallet_BEVOR.kv")
+        content = Builder.load_file(args.kv_file) if args.kv_file else Builder.load_file(conf.KIVY_PATH)
+    except Exception as e:
+        print(f"Error loading .kv file: {e}")
+        sys.exit(1)
 
     # Create an instance of the SalletBEVOR app with loaded content and a content size multiplier.
-    application = SalletBEVOR(window_content=content, csm=1, dotenv_path=DOTENV_PATH)
+    application = SalletBEVOR(window_content=content,
+                              window_title=conf.WINDOW_TITLE,
+                              dotenv_path=DOTENV_PATH,
+                              csm=1)
 
     # Run the Kivy application with defined settings.
     application.run()

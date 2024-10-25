@@ -6,6 +6,7 @@ from kivy.uix.togglebutton import ToggleButton
 from kivy.uix.textinput import TextInput
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.stacklayout import StackLayout
+from kivy.uix.scrollview import ScrollView
 
 from SalletBasePackage.models import Utxo
 from SalletNodePackage.BitcoinNodeObject import Node
@@ -51,6 +52,16 @@ class LabelWelcomeListLeft(Label):
     pass
 
 
+class LabelWelcomeTitle(Label):
+    """custom Label"""
+    pass
+
+
+class LabelWelcomeIntro(Label):
+    """custom Label"""
+    pass
+
+
 class LabelWelcomeList(Label):
     """custom Label"""
     pass
@@ -62,6 +73,16 @@ class ScreenTitleLabel(Label):
 
 
 class ButtonSallet(Button):
+    """custom Button"""
+    pass
+
+
+class ButtonBig(ButtonSallet):
+    """custom Button"""
+    pass
+    
+
+class ButtonScreenNav(ButtonSallet):
     """custom Button"""
     pass
 
@@ -81,8 +102,23 @@ class ToggleButtonSallet(ToggleButton):
     pass
 
 
+class TextInputBrowser(TextInput):
+    """custom TextInput"""
+    pass
+    
+
 class TextInputSallet(TextInput):
     """custom TextInput"""
+    pass
+
+
+class Ribbon(BoxLayout):
+    """custom Layout"""
+    pass
+
+
+class TitleLine(BoxLayout):
+    """custom Layout"""
     pass
 
 
@@ -108,6 +144,11 @@ class NodeDisplayArea(StackLayout):
 
 class OperationAreaBox(BoxLayout):
     """custom BoxLayout"""
+    pass
+
+
+class ScrollViewSallet(ScrollView):
+    """custom ScrollView"""
     pass
 
 
