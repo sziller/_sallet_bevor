@@ -209,6 +209,8 @@ class OpAreaCommand(OperationAreaBox):
         except:
             inst.background_color = (1, 0, 0)
             inst.text = "INVALID"
+            
+        # TODO: this module is way better handled in the assist package! - change to rdf - Recursive Data Formatter
         data_as_displayed = DaDi.rec_data_plotter(data=returned_json, string="")
         self.ids.lbl_tx_info.text = data_as_displayed
 
