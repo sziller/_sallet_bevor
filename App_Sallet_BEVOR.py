@@ -7,18 +7,15 @@ import cv2
 import dotenv
 import inspect
 import logging
-from functools import wraps
 from typing import Optional
 from kivy.app import App  # necessary for the App class
 from kivy.uix.screenmanager import ScreenManager
-from kivy.properties import ListProperty
 from kivy.clock import Clock
 from kivy.uix.image import AsyncImage
-from kivy.graphics.texture import Texture
 
 from SalletBasePackage.WidgetClasses import *
 from SalletBasePackage import SQL_interface as sql
-# from SalletBasePackage import units
+from SalletBasePackage.decorators import *
 from SalletBasePackage import DataDisplay as DaDi
 from SalletNodePackage.NodeManager import NODEManager
 from SalletNodePackage.BitcoinNodeObject import Node as btcNode
@@ -27,44 +24,11 @@ from kivy.config import Config
 import config as conf
 
 lg = logging.getLogger()
-
-PALETTES = conf.PALETTES
-
-
-def log_button_click(func):
-    """=== Decorator for logging - by Sziller ==="""
-    @wraps(func)  # Preserve the original function's metadata
-    def wrapper(self, *args, **kwargs):
-        """=== Wrapper =================================================================================================
-        Wrapper function that logs the method name before executing the original method.
-        :param self:    -   neccessary for the wrapper
-        :param args:    -   Positional arguments passed to the original method.
-        :param kwargs:  -   Keyword arguments passed to the original method.
-        :return: The result of the original method.
-        ========================================================================================== by Sziller ==="""
-        cim = func.__name__  # Get the method name
-        lg.info(f"[clicked     ] - {cim}")
-        return func(self, *args, **kwargs)
-    return wrapper
-
-
-def run_internal_reset(func):
-    """=== Decorator to run internal method - by Sziller ==="""
-    @wraps(func)
-    def wrapper(self, *args, **kwargs):
-        """=== Wrapper =================================================================================================
-        Wrapper function that logs the method name before executing the original method.
-        :param self:    -   neccessary for the wrapper
-        :param args:    -   Positional arguments passed to the original method.
-        :param kwargs:  -   Keyword arguments passed to the original method.
-        :return: The result of the original method.
-        ========================================================================================== by Sziller ==="""
-        self._reset_stored_data()  # Run the internal method
-        return func(self, *args, **kwargs)
-    return wrapper
-
+lg.info("START: {:>85} <<<".format('App_Sallet_BEVOR.py'))
 
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
+SCREENNAMES = conf.SCREENNAMES
+
 
 WELCOME_TITLE       = "Welcome to Sallet - protecting your assets!"
 WELCOME_TXT         = ("This is the Bevor module of the Sallet Universe: "
@@ -84,61 +48,25 @@ FEATURE_ALIASES     = ("- Coin selection\n"
 class SalletScreenManager(ScreenManager):
     def __init__(self, **kwargs):
         super(SalletScreenManager, self).__init__(**kwargs)
-        self.statedict = {
-            "screen_intro": {
-                "seq": 0,
-                'inst': "button_nav_intro",
-                'down': ["button_nav_intro"],
-                'normal': ["button_nav_command"]},
-            "screen_command": {
-                "seq": 3,
-                'inst': "button_nav_command",
-                'down': ["button_nav_command"],
-                'normal': ["button_nav_intro"]}
-            }
+        self.statedict: Optional[dict] = None
+        # ----------------------------------------------------------------------
+        self.generate_statedict()
 
-
-class NavBar(BoxLayout):
-    """=== Class name: NavBar ==========================================================================================
-    This Layout can be used across all screens. Class handles complications of now yet drawn instances.
-    It sets appearance for instances only appearing on screen.
-    ============================================================================================== by Sziller ==="""
-
-    @ staticmethod
-    def on_release_navbar(inst):
-        """=== Method name: on_toggle_navbar ===========================================================================
-        Method manages multiple screen selection by Toggle button set.
-        All Toggle Buttons call this same function. Their Class names are stored in the <buttons> list.
-        Only one button of the entire set is down at a given time. Function is extendable.
-        Once a given button is 'down', it becomes inactive, all other buttons are activated and set to "normal" state.
-        The reason of the logic is as follows:
-        Screen manager is the unit taking care of actual screen swaps, also it stores actually shown screen name.
-        However, at the itme of instantiation of the Screen Manager's ids are still not accessible.
-        So we refer to ScreenManager's id's only on user action.
-        :var inst: - the instance (button) activating the Method.
+    def generate_statedict(self):
+        """=== Instance method =========================================================================================
+        Generates the statedict, from a list of screen-names
         ========================================================================================== by Sziller ==="""
-        # Retrieve the sequence number of the currently shown screen
-        old_seq: int = 0
-        for k, v in App.get_running_app().root.statedict.items():
-            if k == App.get_running_app().root.current_screen.name:
-                old_seq = v["seq"]
-                break
-        # Identify the sequence number of the target screen
-        new_seq = App.get_running_app().root.statedict[inst.target]["seq"]
-
-        # Change the screen based on the direction of the sequence change
-        App.get_running_app().change_screen(screen_name=inst.target,
-                                            screen_direction={True: "left", False: "right"}[old_seq - new_seq < 0])
-        # Update button appearances based on the target screen's states
-        for buttinst in App.get_running_app().root.current_screen.ids.navbar.ids:
-            # Deactivate buttons linked to the target screen
-            if buttinst in App.get_running_app().root.statedict[inst.target]['down']:
-                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].disabled = True
-                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].state = "normal"
-            # Activate buttons not linked to the target screen
-            if buttinst in App.get_running_app().root.statedict[inst.target]['normal']:
-                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].disabled = False
-                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].state = "normal"
+        self.statedict = {}
+        # Loop over each item in the list with its index
+        for idx, item in enumerate(SCREENNAMES):
+            screen_key = f"screen_{item}"
+            inst_key = f"button_nav_{item}"
+            # Construct the dictionary entry
+            self.statedict[screen_key] = {
+                "seq": idx,
+                "inst": inst_key,
+                "down": [inst_key],
+                "normal": [f"button_nav_{other}" for other in SCREENNAMES if other != item]}
 
 
 class OpAreaIntro(OperationAreaBox):
@@ -304,17 +232,13 @@ class SalletBEVOR(App):
         super(SalletBEVOR, self).__init__()
         self.window_content                 = window_content
         self.content_size_multiplier: float = csm
-        self.palettes: Optional[list]       = None
-        self.current_palette_index: int     = 0
-        self.current_permutation_index: int = 0
-        self.current_palette: Optional      = None
-        # self.current_palette                = self.palettes[0]  # Use the first palette initially
         # ----------------------------------------------------------------------
         self.dotenv_path: str               = dotenv_path
         dotenv.load_dotenv(self.dotenv_path)
         self.title: str                     = window_title
         self.balance_onchain_sats: int      = 0
         # --- Database settings ---------------------------------------------   - Database settings -   START   -
+        # TODO: check sql source!
         self.db_session = sql.createSession(db_path=os.getenv("DB_PATH_BEVOR"),
                                             style=os.getenv("DB_STYLE_BEVOR"))
         # --- Database settings ---------------------------------------------   - Database settings -   ENDED   -
@@ -330,8 +254,6 @@ class SalletBEVOR(App):
                                                     session_in=self.db_session)
         self.actual_node_object: Optional[btcNode] = None
         # --- Node related settings -------------------------------------  Node related settings    -   START   -
-
-        
 
     def change_screen(self, screen_name, screen_direction="left"):
         """=== Method name: change_screen ==============================================================================
@@ -358,9 +280,6 @@ class SalletBEVOR(App):
                 if widget_name.startswith("oparea_"):
                     widget_obj.on_init()
         # --- Initiating each OpArea's <on_init> methods                                        ENDED   -
-
-        SalletBEVOR.color_A = ListProperty([1, 0, 0, 1])
-        SalletBEVOR.color_B = ListProperty([0, 1, 0, 1])
 
         # --- Navigation-button handling                                                        START   -
         for navname, navbutton in self.root.ids.screen_intro.ids.navbar.ids.items():
@@ -418,19 +337,10 @@ class SalletBEVOR(App):
         # Update the node info label on the Welcome screen
         self.update_node_label()
 
-    @log_button_click
-    def on_release_switch_template(self, target_palette: Optional[list] = None):
-        """Method to switch app appearance when the button is pressed."""
-        print("next palette")
-
-    @log_button_click
-    def on_release_permute_colors(self, target_permutation: Optional[list] = None):
-        """Method to permutate colors of current palette when the button is pressed."""
-        print("next color order")
-
 
 if __name__ == "__main__":
     import sys
+    import config as conf
     import argparse
     from kivy.lang import Builder  # to freely pick kivy files
     from kivy.core.window import Window

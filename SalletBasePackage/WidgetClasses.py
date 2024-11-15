@@ -1,5 +1,6 @@
 """All Widgets and Layouts defined for the main Python file"""
 
+from kivy.app import App  # necessary for the App class
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.togglebutton import ToggleButton
@@ -8,31 +9,50 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.scrollview import ScrollView
 
+from SalletBasePackage.decorators import *
 from SalletBasePackage.models import Utxo
 from SalletNodePackage.BitcoinNodeObject import Node
 
 
-class LabelTitle(Label):
+# -----------------------------------------------------------------------------------------------
+# - Labels                                                              Labels      -   START   -
+# -----------------------------------------------------------------------------------------------
+class LabelSallet(Label):
     """custom Label"""
     pass
 
 
-class LabelInfo(Label):
+class LabelInfo(LabelSallet):
     """custom Label"""
     pass
 
 
-class LabelSubTitle(Label):
+class LabelWelcomeTitle(LabelSallet):
     """custom Label"""
     pass
 
 
-class LabelSubSubTitle(Label):
+class LabelWelcomeIntro(LabelSallet):
     """custom Label"""
     pass
 
 
-class LabelListitem(Label):
+class LabelTitle(LabelSallet):
+    """custom Label"""
+    pass
+
+
+class LabelSubTitle(LabelSallet):
+    """custom Label"""
+    pass
+
+
+class LabelSubSubTitle(LabelSallet):
+    """custom Label"""
+    pass
+
+
+class LabelListitem(LabelSallet):
     """custom Label"""
     pass
 
@@ -47,32 +67,33 @@ class LabelEnd(LabelListitem):
     pass
 
 
-class LabelWelcomeListLeft(Label):
+class LabelWelcomeList(LabelSallet):
     """custom Label"""
     pass
 
 
-class LabelWelcomeTitle(Label):
+class LabelWelcomeListLeft(LabelSallet):
     """custom Label"""
     pass
 
 
-class LabelWelcomeIntro(Label):
+class ScreenTitleLabel(LabelSallet):
     """custom Label"""
     pass
+# -----------------------------------------------------------------------------------------------
+# - Labels                                                              Labels      -   ENDED   -
+# -----------------------------------------------------------------------------------------------
 
 
-class LabelWelcomeList(Label):
-    """custom Label"""
-    pass
-
-
-class ScreenTitleLabel(Label):
-    """custom Label"""
-    pass
-
-
+# -----------------------------------------------------------------------------------------------
+# - Button                                                              Button      -   START   -
+# -----------------------------------------------------------------------------------------------
 class ButtonSallet(Button):
+    """custom Button"""
+    pass
+
+
+class ButtonScreenNav(ButtonSallet):
     """custom Button"""
     pass
 
@@ -81,11 +102,6 @@ class ButtonBig(ButtonSallet):
     """custom Button"""
     pass
     
-
-class ButtonScreenNav(ButtonSallet):
-    """custom Button"""
-    pass
-
 
 class ButtonListitem(ButtonSallet):
     """custom Button"""
@@ -100,18 +116,61 @@ class ButtonInfo(ButtonSallet):
 class ToggleButtonSallet(ToggleButton):
     """custom ToggleButton"""
     pass
+# -----------------------------------------------------------------------------------------------
+# - Button                                                              Button      -   ENDED   -
+# -----------------------------------------------------------------------------------------------
 
 
-class TextInputBrowser(TextInput):
-    """custom TextInput"""
-    pass
-    
-
+# -----------------------------------------------------------------------------------------------
+# - TextInput                                                        TextInput      -   START   -
+# -----------------------------------------------------------------------------------------------
 class TextInputSallet(TextInput):
     """custom TextInput"""
     pass
 
 
+class TextInputLineSallet(TextInputSallet):
+    """custom TextInput"""
+    pass
+
+
+class TextInputParagraphSallet(TextInputSallet):
+    """custom TextInput"""
+    pass
+
+
+class TextInputBrowser(TextInputParagraphSallet):
+    """custom TextInput"""
+    pass
+
+
+class TextShowTx(TextInputParagraphSallet):
+    """custom TextInput"""
+    pass
+
+
+class TextInpEntropySel(TextInputLineSallet):
+    """custom TextInput"""
+    pass
+# -----------------------------------------------------------------------------------------------
+# - TextInput                                                        TextInput      -   ENDED   -
+# -----------------------------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------------------------
+# - ScrollView                                                       ScrollView     -   START   -
+# -----------------------------------------------------------------------------------------------
+class ScrollViewSallet(ScrollView):
+    """custom ScrollView"""
+    pass
+# -----------------------------------------------------------------------------------------------
+# - ScrollView                                                       ScrollView     -   ENDED   -
+# -----------------------------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------------------------
+# - Layouts                                                         Layouts         -   START   -
+# -----------------------------------------------------------------------------------------------
 class Ribbon(BoxLayout):
     """custom Layout"""
     pass
@@ -144,11 +203,6 @@ class NodeDisplayArea(StackLayout):
 
 class OperationAreaBox(BoxLayout):
     """custom BoxLayout"""
-    pass
-
-
-class ScrollViewSallet(ScrollView):
-    """custom ScrollView"""
     pass
 
 
@@ -331,9 +385,55 @@ class UtxoRowObj(BoxLayout):
         self.disabled = True
         self.parent_op_area.use_utxo_as_input(self.uxto_id_obj)
         
-        
     def remove_this_utxo(self, inst=None, **kwargs):
         """=== Method to use actual utxo as Transaction input"""
         print("Button pushed: <remove_this_utxo>")
         self.parent_op_area.disregard_utxo_as_input(self.uxto_id_obj)
 
+# -----------------------------------------------------------------------------------------------
+# - Layouts                                                         Layouts         -   ENDED   -
+# -----------------------------------------------------------------------------------------------
+
+
+class NavBar(BoxLayout):
+    """=== Class name: NavBar ==========================================================================================
+    This Layout can be used across all screens. Class handles complications of now yet drawn instances.
+    It sets appearance for instances only appearing on screen.
+    ============================================================================================== by Sziller ==="""
+
+    @ staticmethod
+    @ log_button_click
+    def on_release_navbar(inst):
+        """=== StaticMethod ============================================================================================
+        Method manages multiple screen selection by Toggle button set.
+        All Toggle Buttons call this same function. Their Class names are stored in the <buttons> list.
+        Only one button of the entire set is down at a given time. Function is extendable.
+        Once a given button is 'down', it becomes inactive, all other buttons are activated and set to "normal" state.
+        The reason of the logic is as follows:
+        Screen manager is the unit taking care of actual screen swaps, also it stores actually shown screen name.
+        However, at the itme of instantiation of the Screen Manager's ids are still not accessible.
+        So we refer to ScreenManager's id's only on user action.
+        :var inst: - the instance (button) activating the Method.
+        ========================================================================================== by Sziller ==="""
+        # Retrieve the sequence number of the currently shown screen
+        old_seq: int = 0
+        for k, v in App.get_running_app().root.statedict.items():
+            if k == App.get_running_app().root.current_screen.name:
+                old_seq = v["seq"]
+                break
+        # Identify the sequence number of the target screen
+        new_seq = App.get_running_app().root.statedict[inst.target]["seq"]
+
+        # Change the screen based on the direction of the sequence change
+        App.get_running_app().change_screen(screen_name=inst.target,
+                                            screen_direction={True: "left", False: "right"}[old_seq - new_seq < 0])
+        # Update button appearances based on the target screen's states
+        for buttinst in App.get_running_app().root.current_screen.ids.navbar.ids:
+            # Deactivate buttons linked to the target screen
+            if buttinst in App.get_running_app().root.statedict[inst.target]['down']:
+                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].disabled = True
+                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].state = "normal"
+            # Activate buttons not linked to the target screen
+            if buttinst in App.get_running_app().root.statedict[inst.target]['normal']:
+                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].disabled = False
+                App.get_running_app().root.current_screen.ids.navbar.ids[buttinst].state = "normal"
