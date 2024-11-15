@@ -15,6 +15,7 @@ from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
+# TODO: must not be used anymore. This has been replaced by a more general package.
 
 Base = declarative_base()
 
